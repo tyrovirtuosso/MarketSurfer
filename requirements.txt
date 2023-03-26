@@ -1,0 +1,6 @@
+ccxt
+yfinance
+alpaca
+pandas_ta
+python-dotenv
+requests
