@@ -4,3 +4,4 @@ alpaca
 pandas_ta
 python-dotenv
 requests
+pexpect
