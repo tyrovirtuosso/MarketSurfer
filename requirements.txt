@@ -1,0 +1,9 @@
+ccxt
+yfinance
+pandas_ta
+python-dotenv
+requests
+alpaca-py
+pandas_market_calendars
+pexpect
+termcolor

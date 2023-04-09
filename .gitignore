@@ -128,5 +128,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Mac Specific files
+.DS_Store
+
+# Project specific files
+data_fetcher/data/
+
 # Mac specific files
 .DS_Store
