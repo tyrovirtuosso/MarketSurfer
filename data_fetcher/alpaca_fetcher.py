@@ -15,7 +15,6 @@ try:
 except ImportError:
     from utils import Utils
 
-utils = Utils()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,7 @@ class AlpacaFetcher:
         self.storage_handler = storage_handler
         load_dotenv()
         self.client = StockHistoricalDataClient(api_key=os.environ.get('ALPACA_API_KEY'), secret_key=os.environ.get('ALPACA_SECRET_KEY'))
+        self.utils = Utils()
 
     def fetch_data(self, symbol):
         data = self.storage_handler.load_data(symbol)
@@ -37,7 +37,7 @@ class AlpacaFetcher:
             end_date = self.get_end_date()
             raw_data = self.fetch_raw_data(symbol, start_date, end_date)
             data = self.process_data(raw_data, symbol)      
-            utils.export_to_csv(data, f"{symbol}")                                             
+            self.utils.export_to_csv(data, f"{symbol}")                                             
             self.storage_handler.save_data(symbol, data, AlpacaFetcher.CATEGORY, AlpacaFetcher.SOURCE)
             
         return data
@@ -107,6 +107,7 @@ class AlpacaFetcher:
     def update_data(self, symbol):
         latest_date = self.storage_handler.get_latest_date(symbol, AlpacaFetcher.CATEGORY, AlpacaFetcher.SOURCE)
         print(f"Latest Date in Database: {latest_date}")
+        
         if latest_date is not None:
             start_date = pd.to_datetime(latest_date) + datetime.timedelta(hours=1)
             end_date = self.get_end_date()
@@ -114,23 +115,30 @@ class AlpacaFetcher:
             print(f"end_date: {end_date}")
             if start_date < end_date and (end_date - start_date).total_seconds() >= 3600:
                 raw_data = self.fetch_raw_data(symbol, start_date, end_date)
-                if raw_data.empty:
-                    print(colored(f"No new data is being collected for {symbol} as its a holiday. Holiday data will be interpolated based on next available datapoint", 'blue', attrs=['bold']))                                                               
-                else:
-                    data = self.process_data(raw_data, symbol)  
-                    self.storage_handler.save_data(symbol, data, AlpacaFetcher.CATEGORY, AlpacaFetcher.SOURCE)
-                    all_data = self.storage_handler.load_data(symbol)
-                    utils.export_to_csv(all_data, f"{symbol}")
-                    return all_data
+                all_data = self.handle_update_response(raw_data, symbol)
+                return all_data        
             else:
                 print(f"No new data to update for {symbol}")
                 all_data = self.storage_handler.load_data(symbol)
-                utils.export_to_csv(all_data, f"{symbol}")
+                self.utils.export_to_csv(all_data, f"{symbol}")
                 return all_data             
                 
         else:
             print(f"No data found for {symbol}, fetching all data")
             return self.fetch_data(symbol)
+        
+    def handle_update_response(self, raw_data, symbol):
+        if raw_data.empty:
+            print(colored(f"No new data is being collected for {symbol} as its a holiday. Holiday data will be interpolated based on next available datapoint", 'blue', attrs=['bold']))                                                               
+            all_data = self.storage_handler.load_data(symbol)
+            self.utils.export_to_csv(all_data, f"{symbol}")
+            return all_data    
+        else:
+            data = self.process_data(raw_data, symbol)  
+            self.storage_handler.save_data(symbol, data, AlpacaFetcher.CATEGORY, AlpacaFetcher.SOURCE)
+            all_data = self.storage_handler.load_data(symbol)
+            self.utils.export_to_csv(all_data, f"{symbol}")
+            return all_data
         
     def get_end_date(self):
         return (pd.to_datetime(pd.Timestamp.utcnow()).replace(tzinfo=None) - datetime.timedelta(minutes=16))

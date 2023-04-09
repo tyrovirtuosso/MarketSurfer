@@ -1,10 +1,8 @@
-import subprocess
 import time
 import os
 import pexpect
 from dotenv import load_dotenv
-import sys
-import requests
+from termcolor import colored
 
 class Utils:
     def __init__(self):
@@ -32,7 +30,7 @@ class Utils:
         if cols_to_remove:
             df.drop(cols_to_remove, axis=1, level=1, inplace=True)
         df.to_csv(file_path, index=True)
-
+        
     def get_current_ip(self):
         connect_command = "protonvpn s"
         child = pexpect.spawn(connect_command)
@@ -50,7 +48,7 @@ class Utils:
             return
         connected = False
         original_ip = self.get_current_ip()
-        print("Original IP address:", original_ip) 
+        print(f"Original IP address: {colored(original_ip, 'yellow')}")
         while not connected:
             try:                         
                 # Connect to a random ProtonVPN server
@@ -62,11 +60,11 @@ class Utils:
                 child.expect(pexpect.EOF)
                 time.sleep(3)        
                 new_ip = self.get_current_ip()
-                print("\nIP address after Connect:", new_ip)
+                print(f"\nNew IP address: {colored(new_ip, 'yellow')}")
                 if new_ip != original_ip:
                     connected = True
-                    print("New IP address:", new_ip)
+                    print(colored("IP changed successfully", 'yellow'))
                 
             except pexpect.exceptions.ExceptionPexpect as e:
-                print("Error connecting to ProtonVPN:", e)
+                print(f"{colored('Error connecting to ProtonVPN', 'red')}: {e}")
         
