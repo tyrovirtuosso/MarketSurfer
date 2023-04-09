@@ -131,3 +131,6 @@ dmypy.json
 
 # Mac Specific files
 .DS_Store
+
+# Project specific files
+data_fetcher/data/

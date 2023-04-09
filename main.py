@@ -1,16 +1,50 @@
-from data_fetcher import (CoinGeckoFetcher,AlpacaFetcher)
+from data_fetcher import CoinGeckoFetcher, AlpacaFetcher
+from storage import FolderStorage, SQLiteStorage, HDFSStorage
+import configparser
+from termcolor import colored
+
+
+def create_fetcher(category, storage_handler):
+    if category == 'crypto':
+        return CoinGeckoFetcher(storage_handler=storage_handler)
+    elif category == 'stock':
+        return AlpacaFetcher(storage_handler=storage_handler)
+    else:
+        raise ValueError(f"Unknown category: {category}")
+
+
+def read_config(config_file):
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    storage_choice = int(config.get('Settings', 'storage_choice'))
+    if storage_choice == 1:
+        storage_handler = FolderStorage()
+    elif storage_choice == 2:
+        storage_handler = SQLiteStorage()
+    elif storage_choice == 3:
+        storage_handler = HDFSStorage()
+    else:
+        raise ValueError("Invalid storage choice")
+
+    return storage_handler
 
 
 def main():
-    # Instantiate the fetcher classes
-    coingecko_fetcher = CoinGeckoFetcher()
-    df = coingecko_fetcher.fetch_data('ethereum')
+    storage_handler = read_config('config.ini')
 
-    # Choose the best data source and fetch data
-    # For example, you can fetch BTC/USDT data from CCXT
+    symbols = {
+        'crypto': ['bitcoin'],
+        'stock': ['AAPL']
+    }
 
-    # Validate the data and present it to the user
-    # ...
+    for category, symbol_list in symbols.items():        
+        fetcher = create_fetcher(category, storage_handler)
+        for symbol in symbol_list:
+            print("\n")
+            print(f"Updating {category} {colored(symbol.upper(), 'green', attrs=['bold'])}")
+            updated_data = fetcher.update_data(symbol) 
+            
 
 
 if __name__ == "__main__":
